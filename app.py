@@ -1,108 +1,51 @@
-import tkinter as tk
+from flask import Flask, render_template, jsonify
 import speedtest
 
+app = Flask(__name__)
 
-def speedcheck():
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+@app.route("/speedtest")
+def speed_test():
+
     try:
-        status_label.config(text="Testing...", fg="orange")
-        root.update()
-
+        # Create speedtest object
         st = speedtest.Speedtest()
+
+        # Find best server
         st.get_best_server()
 
+        # Download speed
         download = st.download() / 1_000_000
+
+        # Upload speed
         upload = st.upload() / 1_000_000
 
-        download_label.config(text=f"{download:.2f} Mbps")
-        upload_label.config(text=f"{upload:.2f} Mbps")
+        # Ping
+        ping = st.results.ping
 
-        status_label.config(text="Test completed", fg="green")
+        return jsonify({
+            "success": True,
+            "download": round(download, 2),
+            "upload": round(upload, 2),
+            "ping": round(ping, 2)
+        })
 
     except Exception as e:
-        status_label.config(text="Speed test failed", fg="red")
-        download_label.config(text="--")
-        upload_label.config(text="--")
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
 
 
-# Main window
-root = tk.Tk()
-root.title("Internet Speed Test")
-root.geometry("500x550")
-root.resizable(False, False)
-root.configure(bg="#f2f2f2")
-
-
-# Title
-title = tk.Label(
-    root,
-    text="Internet Speed Test",
-    font=("Arial", 28, "bold"),
-    bg="#f2f2f2",
-    fg="#222222"
-)
-title.pack(pady=35)
-
-
-# Download section
-tk.Label(
-    root,
-    text="Download Speed",
-    font=("Arial", 18, "bold"),
-    bg="#f2f2f2"
-).pack(pady=(20, 5))
-
-download_label = tk.Label(
-    root,
-    text="--",
-    font=("Arial", 26, "bold"),
-    bg="#f2f2f2",
-    fg="#1976D2"
-)
-download_label.pack()
-
-
-# Upload section
-tk.Label(
-    root,
-    text="Upload Speed",
-    font=("Arial", 18, "bold"),
-    bg="#f2f2f2"
-).pack(pady=(30, 5))
-
-upload_label = tk.Label(
-    root,
-    text="--",
-    font=("Arial", 26, "bold"),
-    bg="#f2f2f2",
-    fg="#388E3C"
-)
-upload_label.pack()
-
-
-# Status
-status_label = tk.Label(
-    root,
-    text="Ready",
-    font=("Arial", 13),
-    bg="#f2f2f2",
-    fg="#555555"
-)
-status_label.pack(pady=25)
-
-
-# Button
-button = tk.Button(
-    root,
-    text="CHECK SPEED",
-    font=("Arial", 16, "bold"),
-    bg="#2196F3",
-    fg="white",
-    padx=30,
-    pady=10,
-    cursor="hand2",
-    command=speedcheck
-)
-button.pack()
-
-
-root.mainloop()
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
